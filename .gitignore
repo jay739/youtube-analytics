@@ -12,3 +12,10 @@ env/
 *.swo
 youtube_report.txt
 Global_YouTube_Statistics.csv
+
+# Local AI-assistant scaffolding (not for the repo)
+CLAUDE.md
+.claude/
+
+# Generated dependency catalog (via /packages skill); kept local, not pushed
+docs/PACKAGES.md
