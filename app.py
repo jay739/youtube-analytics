@@ -2,11 +2,11 @@ import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from tkinter import ttk
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.use('TkAgg')  # Ensure Tk compatibility for plotting
+matplotlib.use('TkAgg')  # Must be set before pyplot is imported
+import matplotlib.pyplot as plt
+
+from analytics import build_report, make_mock_dataset, read_dataset, summarize
 
 # Color palette for modern dark theme
 BG_COLOR = "#1e222b"
@@ -96,7 +96,7 @@ class YouTubeAnalyticsApp:
     def load_data(self, path):
         try:
             self.file_path = path
-            self.df = pd.read_csv(path)
+            self.df = read_dataset(path)
             self.lbl_status.config(text=f"Loaded: {os.path.basename(path)}", foreground=SUCCESS_COLOR)
 
             # Enable analyze button
@@ -105,50 +105,14 @@ class YouTubeAnalyticsApp:
             # Update summary stats text box
             self.txt_summary.config(state=tk.NORMAL)
             self.txt_summary.delete(1.0, tk.END)
-
-            num_rows = len(self.df)
-            num_cols = len(self.df.columns)
-            columns = ", ".join(self.df.columns.tolist()[:6]) + "..."
-            
-            summary_text = (
-                f"File: {path}\n"
-                f"Records Count: {num_rows}\n"
-                f"Features Count: {num_cols}\n"
-                f"Available Fields: {columns}\n\n"
-                f"Numeric Columns Summary:\n"
-                f"{self.df.describe(include=[np.number]).iloc[:, :3].to_string()}\n"
-            )
-            self.txt_summary.insert(tk.END, summary_text)
+            self.txt_summary.insert(tk.END, summarize(self.df, path))
             self.txt_summary.config(state=tk.DISABLED)
 
         except Exception as e:
             messagebox.showerror("Ingestion Error", f"Failed to parse CSV file: {e}")
 
     def generate_mock_dataset(self):
-        # Create a mock Kaggle YouTube Statistics dataset
-        np.random.seed(42)
-        categories = ["Music", "Entertainment", "Education", "Gaming", "People & Blogs", "Comedy", "Howto & Style"]
-        countries = ["US", "IN", "BR", "CA", "GB", "KR", "MX", "JP"]
-        
-        data = {
-            "rank": list(range(1, 51)),
-            "Youtuber": [f"Creator_{i}" for i in range(1, 51)],
-            "subscribers": np.random.randint(10000000, 150000000, size=50),
-            "video views": np.random.randint(1000000000, 50000000000, size=50),
-            "category": np.random.choice(categories, size=50),
-            "uploads": np.random.randint(100, 15000, size=50),
-            "Country": np.random.choice(countries, size=50),
-            "lowest_yearly_earnings": np.random.randint(50000, 500000, size=50),
-            "highest_yearly_earnings": np.random.randint(800000, 8000000, size=50),
-        }
-        mock_df = pd.DataFrame(data)
-        # Give some realistic names to first few creators
-        mock_df.loc[0, "Youtuber"] = "MrBeast"
-        mock_df.loc[1, "Youtuber"] = "PewDiePie"
-        mock_df.loc[2, "Youtuber"] = "T-Series"
-        mock_df.loc[3, "Youtuber"] = "Cocomelon"
-        mock_df.loc[4, "Youtuber"] = "SET India"
-        
+        mock_df = make_mock_dataset()
         target_path = "Global_YouTube_Statistics.csv"
         mock_df.to_csv(target_path, index=False)
         messagebox.showinfo("Success", f"Generated mock dataset: {target_path}")
@@ -159,37 +123,14 @@ class YouTubeAnalyticsApp:
             return
 
         try:
-            # Standardize column names (lowercase and strip spaces)
-            df_cleaned = self.df.copy()
-            df_cleaned.columns = [c.strip().lower() for c in df_cleaned.columns]
-
-            # Map common Kaggle columns
-            sub_col = 'subscribers' if 'subscribers' in df_cleaned.columns else df_cleaned.columns[2]
-            views_col = 'video views' if 'video views' in df_cleaned.columns else 'views' if 'views' in df_cleaned.columns else df_cleaned.columns[3]
-            cat_col = 'category' if 'category' in df_cleaned.columns else 'type' if 'type' in df_cleaned.columns else df_cleaned.columns[4]
-            country_col = 'country' if 'country' in df_cleaned.columns else df_cleaned.columns[6] if len(df_cleaned.columns) > 6 else None
-            earn_col = 'highest_yearly_earnings' if 'highest_yearly_earnings' in df_cleaned.columns else df_cleaned.columns[-1]
+            report, df_cleaned, cols, cat_counts, country_counts = build_report(self.df, self.file_path)
+            sub_col, views_col, cat_col = cols["subscribers"], cols["views"], cols["category"]
+            country_col, earn_col = cols["country"], cols["earnings"]
 
             # Generate Report file
             report_path = "youtube_report.txt"
-            with open(report_path, "w") as f:
-                f.write("=== AUTOMATED YOUTUBE STATISTICS REPORT ===\n")
-                f.write(f"Analyzed File: {self.file_path}\n\n")
-                f.write(f"1. Top 5 Creators by Subscribers:\n")
-                top_subs = df_cleaned.sort_values(by=sub_col, ascending=False).head(5)
-                for idx, row in top_subs.iterrows():
-                    f.write(f"   - {row['youtuber'] if 'youtuber' in row else row.iloc[1]}: {row[sub_col]:,} subs\n")
-                
-                f.write(f"\n2. Category Distribution:\n")
-                cat_counts = df_cleaned[cat_col].value_counts()
-                for cat, count in cat_counts.items():
-                    f.write(f"   - {cat}: {count} channels\n")
-
-                if country_col:
-                    f.write(f"\n3. Top 3 Countries represented:\n")
-                    country_counts = df_cleaned[country_col].value_counts().head(3)
-                    for c, count in country_counts.items():
-                        f.write(f"   - {c}: {count} channels\n")
+            with open(report_path, "w", encoding="utf-8") as f:
+                f.write(report)
 
             # Create Matplotlib Plot
             plt.style.use('dark_background')
