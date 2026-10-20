@@ -1,5 +1,9 @@
 # YouTube Data Analytics Tool
 
+<p align="center">
+  <img src="docs/logo.svg" alt="youtube-analytics logo" width="128" />
+</p>
+
 A desktop GUI utility built with **Python** and **Tkinter** for rapid exploratory data analysis, ingestion, and automated visualization of Kaggle YouTube creator datasets.
 
 ## Features
