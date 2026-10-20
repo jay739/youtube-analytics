@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect x="0" y="0" width="512" height="512" rx="123" ry="123" fill="#0B0D10"/>
+  <g id="icon">
+    <!-- play -->
+    <path d="M 116 150 L 116 362 L 240 256 Z" fill="#FB7185" stroke="#FB7185" stroke-width="24" stroke-linejoin="round"/>
+    <!-- channel stats -->
+    <rect x="272" y="286" width="40" height="76" rx="14" fill="#FB7185"/>
+    <rect x="328" y="222" width="40" height="140" rx="14" fill="#FB7185"/>
+    <rect x="384" y="150" width="40" height="212" rx="14" fill="#FB7185"/>
+    <!-- axis -->
+    <rect x="264" y="380" width="168" height="20" rx="10" fill="#F2F0EA"/>
+  </g>
+</svg>
